@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://estrazione-lettera-fantacalcio.vercel.app/sitemap.xml
