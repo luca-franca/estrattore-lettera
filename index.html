@@ -239,6 +239,15 @@
   .draw-btn:active{ transform:translateY(0); }
   .draw-btn:disabled{ opacity:.65; cursor:default; transform:none; }
 
+  /* Evita selezione testo / menu long-press su smartphone */
+  .draw-btn{
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+  }
+
   /* ---------- Content ---------- */
   .content{ padding:8px 0 20px; }
   .content section{ padding:30px 0; border-top:1px solid var(--line); }
@@ -624,24 +633,41 @@
     step();
   }
 
-btn.addEventListener('mousedown', function(){
-  holdTimer = setTimeout(function(){
-    fixedMode = true;
-    fixedIndex = 0;
-    suppressNextClick = true;
-  }, 3000);
-});
+  function cancelHold(){
+    if (holdTimer !== null){
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+  }
 
-  btn.addEventListener('mouseup', function(){
-    clearTimeout(holdTimer);
+  btn.addEventListener('pointerdown', function(e){
+    if (spinning) return;
+
+    cancelHold();
+
+    // Mantiene il controllo del puntatore anche se il dito si sposta leggermente.
+    if (btn.setPointerCapture && e.pointerId !== undefined){
+      try { btn.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+
+    holdTimer = setTimeout(function(){
+      fixedMode = true;
+      fixedIndex = 0;
+      suppressNextClick = true;
+      holdTimer = null;
+    }, 4000);
   });
 
-  btn.addEventListener('mouseleave', function(){
-    clearTimeout(holdTimer);
+  btn.addEventListener('pointerup', cancelHold);
+  btn.addEventListener('pointercancel', cancelHold);
+
+  // Blocca il menu contestuale che alcuni smartphone mostrano con una pressione lunga.
+  btn.addEventListener('contextmenu', function(e){
+    e.preventDefault();
   });
 
   btn.addEventListener('click', function(){
-    clearTimeout(holdTimer);
+    cancelHold();
 
     if (suppressNextClick){
       suppressNextClick = false;
