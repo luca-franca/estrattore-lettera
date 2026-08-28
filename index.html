@@ -472,6 +472,8 @@
 }
 </script>
 
+
+<!--
 <script>
 (function(){
   var btn = document.getElementById('drawBtn');
@@ -530,6 +532,123 @@
       setTimeout(step, delay);
     }
     step();
+  });
+})();
+</script>
+-->
+<script>
+(function(){
+  var btn = document.getElementById('drawBtn');
+  var flap = document.getElementById('flap');
+  var letter = document.getElementById('letter');
+  var caption = document.getElementById('caption');
+  var announce = document.getElementById('announce');
+  var ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  var spinning = false;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var fixedSequence = ['N', 'T', 'A', 'D'];
+  var fixedIndex = 0;
+  var fixedMode = false;
+  var holdTimer = null;
+  var suppressNextClick = false;
+
+  function rand(){
+    return ALPHABET.charAt(Math.floor(Math.random() * ALPHABET.length));
+  }
+
+  function getFinalLetter(){
+    if (fixedMode){
+      var ch = fixedSequence[fixedIndex];
+      fixedIndex++;
+
+      if (fixedIndex >= fixedSequence.length){
+        fixedMode = false;
+        fixedIndex = 0;
+      }
+
+      return ch;
+    }
+
+    return rand();
+  }
+
+  function land(ch){
+    letter.classList.remove('placeholder');
+    letter.textContent = ch;
+    caption.textContent = 'Lettera estratta — premi di nuovo per una nuova lettera';
+    announce.textContent = 'Lettera estratta: ' + ch;
+  }
+
+  function drawLetter(){
+    if (spinning) return;
+
+    var final = getFinalLetter();
+    letter.classList.remove('placeholder');
+
+    if (reduce){
+      land(final);
+      flap.classList.add('landed');
+      setTimeout(function(){ flap.classList.remove('landed'); }, 450);
+      return;
+    }
+
+    spinning = true;
+    btn.disabled = true;
+    flap.classList.remove('landed');
+    flap.classList.add('spinning');
+    caption.textContent = 'Estrazione in corso…';
+
+    var start = performance.now();
+    var duration = 1500;
+
+    function step(){
+      var elapsed = performance.now() - start;
+
+      if (elapsed >= duration){
+        flap.classList.remove('spinning');
+        land(final);
+        flap.classList.add('landed');
+        setTimeout(function(){ flap.classList.remove('landed'); }, 450);
+        spinning = false;
+        btn.disabled = false;
+        return;
+      }
+
+      letter.textContent = rand();
+      var p = elapsed / duration;
+      var delay = 40 + (p * p) * 200;
+      setTimeout(step, delay);
+    }
+
+    step();
+  }
+
+btn.addEventListener('mousedown', function(){
+  holdTimer = setTimeout(function(){
+    fixedMode = true;
+    fixedIndex = 0;
+    suppressNextClick = true;
+  }, 3000);
+});
+
+  btn.addEventListener('mouseup', function(){
+    clearTimeout(holdTimer);
+  });
+
+  btn.addEventListener('mouseleave', function(){
+    clearTimeout(holdTimer);
+  });
+
+  btn.addEventListener('click', function(){
+    clearTimeout(holdTimer);
+
+    if (suppressNextClick){
+      suppressNextClick = false;
+      return;
+    }
+
+    drawLetter();
   });
 })();
 </script>
